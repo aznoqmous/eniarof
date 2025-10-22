@@ -1,7 +1,9 @@
 #pragma once
+#include "vector2.h"
 
 class Player {
 public:
-    int x = 0;
-    int y = 0;
+    Vector2 position;
+    Vector2 lastPosition;
+    Vector2 direction;
 };

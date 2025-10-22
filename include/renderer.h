@@ -8,9 +8,10 @@ class Renderer {
         void update();
         void clear();
         void clearPanel(Panel panel);
-        void drawPanelPixel(int x, int y, Panel panel, uint16_t color);
+        void drawPanelPixel(Vector2 position, Panel panel, uint16_t color);
         void drawPanelBorder(Panel panel, uint16_t color);
-        void drawPixel(int x, int y, uint16_t color);
-    private:
+        void drawPixel(Vector2 position, uint16_t color);
+        void renderPanel(Panel panel);
         Adafruit_Protomatter matrix;
+
 };
