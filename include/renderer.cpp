@@ -1,29 +1,60 @@
 #include "renderer.h"
 #include "panels.cpp"
 
-uint8_t rgbPins[]  = {42, 41, 40, 38, 39, 37};
-uint8_t addrPins[] = {45, 36, 48, 35, 21};
-uint8_t clockPin   = 2;
-uint8_t latchPin   = 47;
-uint8_t oePin      = 14;
+/**
+ * New, moved to GAME
+ */
+// https://learn.adafruit.com/adafruit-matrixportal-m4/protomatter-arduino-library
+// uint8_t rgbPins[]  = {7, 8, 9, 10, 11, 12};
+// uint8_t addrPins[] = {17, 18, 19, 20, 21};
+// uint8_t clockPin   = 14;
+// uint8_t latchPin   = 15;
+// uint8_t oePin      = 16;
 
-Renderer::Renderer() : matrix(
-        64,          // Width of matrix (or matrices, if tiled horizontally)
-        6,           // Bit depth, 1-6
-        1, rgbPins,  // # of matrix chains, array of 6 RGB pins for each
-        4, addrPins, // # of address pins (height is inferred), array of pins
-        clockPin, latchPin, oePin, // Other matrix control pins
-        true,       // No double-buffering here (see "doublebuffer" example)
-        4 // Row tiling
-    )
-{
-    ProtomatterStatus status = matrix.begin();
-    Serial.print("Protomatter begin() status: ");
-    Serial.println((int)status);
-    if(status != PROTOMATTER_OK) {
-        for(;;);
-    }
-}
+// Renderer::Renderer() : matrix(
+//         64,          // Width of matrix (or matrices, if tiled horizontally)
+//         3,           // Bit depth, 1-6
+//         1, rgbPins,  // # of matrix chains, array of 6 RGB pins for each
+//         4, addrPins, // # of address pins (height is inferred), array of pins
+//         clockPin, latchPin, oePin, // Other matrix control pins
+//         false       // No double-buffering here (see "doublebuffer" example)
+//     )
+// {
+//     ProtomatterStatus status = matrix.begin();
+//     Serial.print("Protomatter begin() status: ");
+//     Serial.println((int)status);
+//     if(status != PROTOMATTER_OK) {
+//         for(;;);
+//     }
+// }
+
+/**
+ * OLD
+ * 
+ */
+// uint8_t rgbPins[]  = {42, 41, 40, 38, 39, 37};
+// uint8_t addrPins[] = {45, 36, 48, 35, 21};
+// uint8_t clockPin   = 2;
+// uint8_t latchPin   = 47;
+// uint8_t oePin      = 14;
+
+// Renderer::Renderer() : matrix(
+//         64,          // Width of matrix (or matrices, if tiled horizontally)
+//         6,           // Bit depth, 1-6
+//         1, rgbPins,  // # of matrix chains, array of 6 RGB pins for each
+//         4, addrPins, // # of address pins (height is inferred), array of pins
+//         clockPin, latchPin, oePin, // Other matrix control pins
+//         true,       // No double-buffering here (see "doublebuffer" example)
+//         4 // Row tiling
+//     )
+// {
+//     ProtomatterStatus status = matrix.begin();
+//     Serial.print("Protomatter begin() status: ");
+//     Serial.println((int)status);
+//     if(status != PROTOMATTER_OK) {
+//         for(;;);
+//     }
+// }
 
 void Renderer::clear(){
     matrix.fillRect(0, 0, 64, 32, matrix.color565(0, 0, 0));
@@ -59,7 +90,7 @@ void Renderer::drawPanelPixel(Vector2 localPos, Panel panel, uint16_t color) {
 void Renderer::renderPanel(Panel panel){
     int x = 0;
     int y = 0;
-    for(std::string row: MAPS[panel.index]){
+    for(std::string row: panel.map){
         x = 0;
         for(char cell : row){
             switch (cell)

@@ -4,7 +4,7 @@
 
 class Renderer {
     public:
-        Renderer();
+        Renderer():matrix(Adafruit_Protomatter(0,0,0,0,0,0,0,0,0,0)){};
         void update();
         void clear();
         void clearPanel(Panel panel);

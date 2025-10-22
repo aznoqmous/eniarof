@@ -17,7 +17,7 @@ public:
     Renderer renderer;
     Vector2 getCharacterPosition(char character, Panel panel);
     std::list<Vector2> getAvailableDirections(Vector2 position);
-private:
+    private:
     Player player;
     std::list<Panel> panels;
     Panel currentPanel;
@@ -26,6 +26,7 @@ private:
     std::vector<Vector2> forwardDirections;
     std::vector<Vector2> getForwardDirections();
     std::vector<Vector2> getBackwardDirections();
+    void addPanel(Panel panel);
     void moveForward();
     void moveBackward();
 
