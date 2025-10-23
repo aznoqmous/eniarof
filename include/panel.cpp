@@ -3,5 +3,10 @@
 
 Panel::Panel(){};
 char Panel::getCharAtPosition(Vector2 position){
-    return MAPS[index][position.y][position.x];
+    if(rotation) return map[position.x][height - position.y];
+    return map[position.y][position.x];
+}
+void Panel::setCharAtPosition(Vector2 position, char value){
+    if(rotation) map[position.x][height - position.y] = value;
+    else map[position.y][position.x] = value;
 }

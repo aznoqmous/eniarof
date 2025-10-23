@@ -9,12 +9,12 @@ uint8_t oePin      = 14;
 
 Renderer::Renderer() : matrix(
         64,          // Width of matrix (or matrices, if tiled horizontally)
-        6,           // Bit depth, 1-6
+        3,           // Bit depth, 1-6
         1, rgbPins,  // # of matrix chains, array of 6 RGB pins for each
         4, addrPins, // # of address pins (height is inferred), array of pins
         clockPin, latchPin, oePin, // Other matrix control pins
         true,       // No double-buffering here (see "doublebuffer" example)
-        4 // Row tiling
+        14 // Row tiling
     )
 {
     ProtomatterStatus status = matrix.begin();
@@ -23,6 +23,12 @@ Renderer::Renderer() : matrix(
     if(status != PROTOMATTER_OK) {
         for(;;);
     }
+
+    playerColor = matrix.color565(255,255,255);
+    pathColor = matrix.color565(0, 32, 64);
+    keyColor = matrix.color565(255,131,0);
+    enemyColor = matrix.color565(255, 0, 0);
+    pathSelectionColor = matrix.color565(0, 255, 0);
 }
 
 void Renderer::clear(){
@@ -35,8 +41,8 @@ void Renderer::update() {
 
 void Renderer::clearPanel(Panel panel) {
     matrix.fillRect(
-        panel.physical_offset_x,
-        panel.physical_offset_y,
+        panel.physical_offset.x,
+        panel.physical_offset.y,
         64,
         32,
         matrix.color565(0, 0, 0)
@@ -53,34 +59,52 @@ void Renderer::drawPanelPixel(Vector2 localPos, Panel panel, uint16_t color) {
         final_y += 32.0;
     }
 
-    matrix.drawPixel(panel.physical_offset_x + final_x, panel.physical_offset_y + final_y, color);
+    matrix.drawPixel(panel.physical_offset.x + final_x, panel.physical_offset.y + final_y, color);
 }
 
 void Renderer::renderPanel(Panel panel){
     int x = 0;
     int y = 0;
-    for(std::string row: MAPS[panel.index]){
+    for(std::string row: panel.map){
         x = 0;
         for(char cell : row){
             switch (cell)
             {
                 case '*':
                 case '=':
-                if(panel.rotation != 0){
-                    drawPanelPixel(
-                        Vector2(y,x),
-                        panel,
-                        matrix.color565(12,12,12)
-                    );
-                }
-                else {
-                    drawPanelPixel(
-                        Vector2(x, y),
-                        panel,
-                        matrix.color565(12,12,12)
-                    );
-                }
+                    if(panel.rotation != 0){
+                        drawPanelPixel(
+                            Vector2(0, panel.height) + Vector2(y, -x),
+                            panel,
+                            pathColor
+                        );
+                    }
+                    else {
+                        drawPanelPixel(
+                            Vector2(x, y),
+                            panel,
+                            pathColor
+                        );
+                    }
                 break;
+                case '+':
+                case '#':
+                case '$':
+                    if(panel.rotation != 0){
+                        drawPanelPixel(
+                            Vector2(0, panel.height) + Vector2(y, -x),
+                            panel,
+                            keyColor
+                        );
+                    }
+                    else {
+                        drawPanelPixel(
+                            Vector2(x, y),
+                            panel,
+                            keyColor
+                        );
+                    }
+                break;                
                 default:
                 break;
             }
@@ -96,8 +120,8 @@ void Renderer::drawPixel(Vector2 position, uint16_t color) {
 
 void Renderer::drawPanelBorder(Panel panel, uint16_t color) {
     matrix.drawRect(
-        panel.physical_offset_x,
-        panel.physical_offset_y,
+        panel.physical_offset.x,
+        panel.physical_offset.y,
         64,
         32,
         color

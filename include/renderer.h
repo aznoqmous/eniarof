@@ -14,4 +14,10 @@ class Renderer {
         void renderPanel(Panel panel);
         Adafruit_Protomatter matrix;
 
+        u_int16_t pathColor;
+        u_int16_t playerColor;
+        u_int16_t keyColor;
+        u_int16_t enemyColor;
+        u_int16_t pathSelectionColor;
+
 };
