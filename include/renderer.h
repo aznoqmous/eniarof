@@ -19,5 +19,6 @@ class Renderer {
         u_int16_t keyColor;
         u_int16_t enemyColor;
         u_int16_t pathSelectionColor;
+        u_int16_t tpColor;
 
 };

@@ -29,6 +29,7 @@ Renderer::Renderer() : matrix(
     keyColor = matrix.color565(255,131,0);
     enemyColor = matrix.color565(255, 0, 0);
     pathSelectionColor = matrix.color565(0, 255, 0);
+    tpColor = matrix.color565(120, 0, 255);
 }
 
 void Renderer::clear(){
@@ -56,7 +57,7 @@ void Renderer::drawPanelPixel(Vector2 localPos, Panel panel, uint16_t color) {
     float final_y = float(localPos.x) * sin(rotation) + float(localPos.y) * cos(rotation);
 
     if(panel.rotation > 0){
-        final_y += 32.0;
+        final_y += 31.0;
     }
 
     matrix.drawPixel(panel.physical_offset.x + final_x, panel.physical_offset.y + final_y, color);
@@ -104,7 +105,25 @@ void Renderer::renderPanel(Panel panel){
                             keyColor
                         );
                     }
-                break;                
+                break;
+                case 'a':
+                case 'b':
+                case 'c':
+                    if(panel.rotation != 0){
+                        drawPanelPixel(
+                            Vector2(0, panel.height) + Vector2(y, -x),
+                            panel,
+                            tpColor
+                        );
+                    }
+                    else {
+                        drawPanelPixel(
+                            Vector2(x, y),
+                            panel,
+                            tpColor
+                        );
+                    }
+                    break;                
                 default:
                 break;
             }

@@ -26,6 +26,15 @@ Game::Game() {
             enemy.spawnPosition = enemy.position;
             enemies.push_back(enemy);
         }
+
+        for(char tpChar: teleportationCharacters){
+            std::list<Vector2> positions = getCharacterPositions(tpChar, panel);
+            if(positions.size()){
+                teleportationPoints[tpChar].push_back(panel);
+            }
+        }
+
+        encoder.attachHalfQuad(hallPin1, hallPin2);
     }
     
     currentPanel = panels.front();
@@ -33,6 +42,7 @@ Game::Game() {
 
     player = Player();
     player.spawnPosition = getCharacterPosition('0', currentPanel);
+    // player.spawnPosition = Vector2(-300, 12);
     player.position = player.spawnPosition;
     movePlayerTo(player.position);
 
@@ -43,6 +53,10 @@ Game::Game() {
 }
 
 void Game::start() {
+
+
+    pinMode(hallPin1, INPUT);  // use internal pull-up
+    pinMode(hallPin2, INPUT);  // use internal pull-up
 
     for(Panel panel : panels) {
         renderer.renderPanel(panel);
@@ -62,7 +76,7 @@ void Game::restartFromLastCheckpoint(){
     }
 }
 
-Vector2 Game::getCharacterPosition(char character, Panel panel) {
+Vector2 Game::getCharacterPosition(char character, const Panel &panel) {
     int x = 0;
     int y = 0;
     for(std::string row: panel.map){
@@ -76,7 +90,7 @@ Vector2 Game::getCharacterPosition(char character, Panel panel) {
         y++;
     }
 }
-std::list<Vector2> Game::getCharacterPositions(char character, Panel panel) {
+std::list<Vector2> Game::getCharacterPositions(char character, const Panel &panel) {
     int x = 0;
     int y = 0;
     std::list<Vector2> positions;
@@ -93,12 +107,14 @@ std::list<Vector2> Game::getCharacterPositions(char character, Panel panel) {
     return positions;
 }
 
-char Game::getCharacterAtPosition(Vector2 position, Panel panel) {
-    return panel.map[position.y][position.x];
-}
+
 char Game::getCharacterAtPosition(Vector2 position) {
-    Panel panel = getPanelAtPosition(position);
+    Panel &panel = getPanelAtPosition(position);
     return panel.getCharAtPosition(position - panel.offset);
+}
+void Game::setCharacterAtPosition(Vector2 position, char value) {
+    Panel &panel = getPanelAtPosition(position);
+    panel.setCharAtPosition(position - panel.offset, value);
 }
 
 void Game::movePlayer(Vector2 direction){
@@ -107,28 +123,53 @@ void Game::movePlayer(Vector2 direction){
 }
 
 void Game::movePlayerTo(Vector2 position) {
-    
     char cell = getCharacterAtPosition(position);
-    Serial.print("CELL: ");
-    Serial.println(cell);
+
     switch(cell) {
         case '$':
             hasKey = true;
+            // Update the stored panel map so the key is removed and cannot be collected again
+            setCharacterAtPosition(position, '*');
+            // Also update currentPanel (display/logic copy) so immediate rendering matches
+            currentPanel = getPanelAtPosition(position);
+            Serial.println("Key collected!");
+            break;
+        case '?':
+            endGame();
             break;
         case '#':
             if(!hasKey) return;
             hasKey = false;
+            setCharacterAtPosition(position, '*');
             break;
         default: break;
     }
 
+    
     player.position = position;
     if(player.position.x < currentPanel.offset.x || player.position.x >= currentPanel.offset.x + currentPanel.width ||
-       player.position.y < currentPanel.offset.y || player.position.y >= currentPanel.offset.y + currentPanel.height) {
+        player.position.y < currentPanel.offset.y || player.position.y >= currentPanel.offset.y + currentPanel.height) {
         currentPanel = getPanelAtPosition(player.position);
         player.spawnPosition = player.position;
         player.spawnDirection = player.direction;
         renderer.renderPanel(currentPanel);
+    }
+
+    if(teleportationPoints.count(cell)){
+        Serial.println(cell);
+        Panel targetPanel = currentPanel.index == teleportationPoints[cell].front().index ? teleportationPoints[cell].back() : teleportationPoints[cell].front();
+        Serial.print(currentPanel.index);
+        Serial.print(":");
+        Serial.println(targetPanel.index);
+        player.position = getCharacterPosition(cell, targetPanel) + targetPanel.offset;
+        currentPanel = targetPanel;
+        player.availableDirections = getAvailableDirections(Vector2(player.position.x, player.position.y));
+        player.direction = player.availableDirections.front();
+        player.spawnPosition = player.position;
+        player.spawnDirection = player.direction;
+        movePlayer(player.direction);
+        return;
+
     }
 
     player.availableDirections = getAvailableDirections(Vector2(player.position.x, player.position.y));
@@ -180,6 +221,7 @@ void Game::moveForward(){
 
 void Game::moveBackward(){
     player.forwardDirections = getBackwardDirections(player);
+    if(!player.forwardDirections.size()) player.forwardDirections = getForwardDirections(player);
     Vector2 direction;
     if(player.forwardDirections.size() == 1){
         direction = player.forwardDirections.front();
@@ -199,8 +241,8 @@ void Game::moveBackward(){
     }
 }
 
-Panel Game::getPanelAtPosition(Vector2 position){
-    for(Panel panel : panels) {
+Panel &Game::getPanelAtPosition(Vector2 position){
+    for(Panel &panel : panels) {
         if(position.x >= panel.offset.x && position.x < panel.offset.x + panel.width &&
            position.y >= panel.offset.y && position.y < panel.offset.y + panel.height) {
             return panel;
@@ -220,7 +262,7 @@ std::list<Vector2> Game::getAvailableDirections(Vector2 position) {
     for(Vector2 dir : possibleDirections) {
         Vector2 newPos = position + dir;
         char cell = getCharacterAtPosition(newPos);
-        if(cell == '*' || cell == '$' || cell == '0') {
+        if(cell == '*' || cell == '$' || cell == '0' || cell == '%' || teleportationPoints.count(cell)) {
             directions.push_back(dir);
         }
         if(cell == '#' && hasKey) directions.push_back(dir);
@@ -238,7 +280,7 @@ std::list<Vector2> Game::getAvailableEnemyDirections(Vector2 position) {
     for(Vector2 dir : possibleDirections) {
         Vector2 newPos = position + dir;
         char cell = getCharacterAtPosition(newPos);
-        if(cell == '*') {
+        if(cell == '*' || cell == '%') {
             directions.push_back(dir);
         }
     }
@@ -265,6 +307,8 @@ void Game::moveEnemy(Enemy &enemy){
 }
 
 void Game::update() {
+
+    // hasKey = true;
 
     for(Enemy &enemy: enemies){
         if(player.position == enemy.position){
@@ -323,8 +367,7 @@ void Game::update() {
                 currentPanel,
                 renderer.pathSelectionColor
             );
-        }
-        
+        }   
     }
     else {
         if(!digitalRead(BUTTON_UP_PIN)){
@@ -363,4 +406,70 @@ void Game::update() {
     }
 
     renderer.update();
+}
+
+
+void Game::inputs(){
+    int count = encoder.getCount();
+    if(abs(count)){
+        if(count > 0) inputForward();
+        else inputBackward();
+        encoder.clearCount();
+    }
+}
+
+void Game::inputForward(){
+        renderer.drawPanelPixel(
+            Vector2(
+                player.position.x - currentPanel.offset.x,
+                player.position.y - currentPanel.offset.y
+            ),
+            currentPanel,
+            renderer.pathColor
+        ); // erase player previous position
+        if(isPathSelection){
+            for(Vector2 dir: player.forwardDirections){
+                renderer.drawPanelPixel(
+                    player.position + dir - currentPanel.offset,
+                    currentPanel,
+                    renderer.pathColor
+                );
+            }
+            int pathIndex = int((millis() - pathSelectionTime) / pathSelectionDuration) % player.forwardDirections.size();
+            isPathSelection = false;
+            player.direction = player.forwardDirections[pathIndex];
+            movePlayer(player.direction);
+        }
+        moveForward();
+}
+
+void Game::inputBackward(){
+    renderer.drawPanelPixel(
+        Vector2(
+            player.position.x - currentPanel.offset.x,
+            player.position.y - currentPanel.offset.y
+        ),
+        currentPanel,
+        renderer.pathColor
+    ); // erase player previous position
+    moveBackward();
+}
+
+void Game::endGame(){
+    int x = 0;
+    int y = 0;
+    for(Panel &panel: panels){
+        renderer.clearPanel(panel);
+        for(std::string row: endPanel.map){
+            x = 0;
+            for(char cell: row){
+                if(cell == '*'){
+                    renderer.drawPanelPixel(Vector2(x, y), panel, renderer.pathColor);
+                }
+                x++;
+            }
+            y++;
+        }
+        y = 0;
+    }
 }
