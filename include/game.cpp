@@ -221,7 +221,11 @@ void Game::moveForward(){
 
 void Game::moveBackward(){
     player.forwardDirections = getBackwardDirections(player);
-    if(!player.forwardDirections.size()) player.forwardDirections = getForwardDirections(player);
+    if(!player.forwardDirections.size()) {
+        // player.forwardDirections = getForwardDirections(player);
+        moveForward();
+        return;
+    }
     Vector2 direction;
     if(player.forwardDirections.size() == 1){
         direction = player.forwardDirections.front();
@@ -307,9 +311,6 @@ void Game::moveEnemy(Enemy &enemy){
 }
 
 void Game::update() {
-
-    // hasKey = true;
-
     for(Enemy &enemy: enemies){
         if(player.position == enemy.position){
             Serial.println("GAME OVER");
@@ -318,6 +319,60 @@ void Game::update() {
         }
     }
 
+    renderer.drawPanelPixel(
+        Vector2(
+            player.position.x - currentPanel.offset.x,
+            player.position.y - currentPanel.offset.y
+        ),
+        currentPanel,
+        renderer.pathColor
+    ); // erase player previous position
+
+    renderer.drawPanelBorder(currentPanel, renderer.matrix.color565(0, 0, 0)); // Erase panel borders
+    
+    // handle inputs before redraw
+    inputs();
+
+    renderer.drawPanelBorder(currentPanel, renderer.matrix.color565(32,32, 0)); // Draw current panel border in green
+    
+    // Draw player as white pixel
+    renderer.drawPanelPixel(
+        player.position - currentPanel.offset,
+        currentPanel,
+        hasKey && int(millis() / 300.0) % 3 > 1 ? renderer.keyColor : renderer.playerColor
+    );
+
+    // Draw enemies
+    if(millis() - lastEnemyMovedTime > enemyMoveTime){
+        lastEnemyMovedTime = millis();
+        for(Enemy &enemy: enemies){
+            Panel p = getPanelAtPosition(enemy.position);
+            if(!enemy.activated && currentPanel.index != p.index) {
+                renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
+                continue;
+            }
+            renderer.drawPanelPixel(enemy.position - p.offset, p,  renderer.pathColor);
+            enemy.activated = true;
+            moveEnemy(enemy);
+            p = getPanelAtPosition(enemy.position);
+            renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
+        }
+    }
+
+    renderer.update();
+}
+
+
+void Game::inputs(){
+
+    int count = encoder.getCount();
+    if(abs(count)){
+        if(count > 0) inputForward();
+        else inputBackward();
+        encoder.clearCount();
+    }
+
+    // ESP32 buttons for debug purpose
     isUpJustPressed = false;
     if(!digitalRead(BUTTON_UP_PIN)){
         if(!isDownJustPressed && !isUpPressed){
@@ -328,21 +383,7 @@ void Game::update() {
     else {
         isUpPressed = false;
     }
-    
-    // renderer.clearPanel(currentPanel);
-    // renderer.renderPanel(currentPanel);
-    
-    renderer.drawPanelPixel(
-        Vector2(
-            player.position.x - currentPanel.offset.x,
-            player.position.y - currentPanel.offset.y
-        ),
-        currentPanel,
-        renderer.pathColor
-    ); // erase player previous position
 
-    renderer.drawPanelBorder(currentPanel, renderer.matrix.color565(0, 0, 0)); // Draw panel border in green
-    
     if(isPathSelection){
         int pathIndex = int((millis() - pathSelectionTime) / pathSelectionDuration) % player.forwardDirections.size();
         for(Vector2 dir: player.forwardDirections){
@@ -379,43 +420,6 @@ void Game::update() {
             moveBackward();
         }
     }
-
-    renderer.drawPanelBorder(currentPanel, renderer.matrix.color565(32,32, 0)); // Draw panel border in green
-    
-    // Draw player as white pixel
-    renderer.drawPanelPixel(
-        player.position - currentPanel.offset,
-        currentPanel,
-        hasKey && int(millis() / 300.0) % 3 > 1 ? renderer.keyColor : renderer.playerColor
-    );
-
-    if(millis() - lastEnemyMovedTime > enemyMoveTime){
-        lastEnemyMovedTime = millis();
-        for(Enemy &enemy: enemies){
-            Panel p = getPanelAtPosition(enemy.position);
-            if(!enemy.activated && currentPanel.index != p.index) {
-                renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
-                continue;
-            }
-            renderer.drawPanelPixel(enemy.position - p.offset, p,  renderer.pathColor);
-            enemy.activated = true;
-            moveEnemy(enemy);
-            p = getPanelAtPosition(enemy.position);
-            renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
-        }
-    }
-
-    renderer.update();
-}
-
-
-void Game::inputs(){
-    int count = encoder.getCount();
-    if(abs(count)){
-        if(count > 0) inputForward();
-        else inputBackward();
-        encoder.clearCount();
-    }
 }
 
 void Game::inputForward(){
@@ -428,6 +432,7 @@ void Game::inputForward(){
             renderer.pathColor
         ); // erase player previous position
         if(isPathSelection){
+            if(millis() - pathSelectionTime < 300) return;
             for(Vector2 dir: player.forwardDirections){
                 renderer.drawPanelPixel(
                     player.position + dir - currentPanel.offset,
