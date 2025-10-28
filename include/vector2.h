@@ -13,6 +13,13 @@ class Vector2 {
         x += vector.x;
         y += vector.y;
     }
+    Vector2 operator-(const Vector2& vector) {
+        return Vector2(x - vector.x, y - vector.y);
+    }
+    void operator-=(const Vector2& vector) {
+        x -= vector.x;
+        y -= vector.y;
+    }
 
     bool operator==(const Vector2& vector) const {
         return x == vector.x && y == vector.y;

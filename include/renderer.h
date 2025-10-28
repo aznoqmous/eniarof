@@ -4,7 +4,7 @@
 
 class Renderer {
     public:
-        Renderer():matrix(Adafruit_Protomatter(0,0,0,0,0,0,0,0,0,0)){};
+        Renderer();
         void update();
         void clear();
         void clearPanel(Panel panel);
@@ -13,5 +13,12 @@ class Renderer {
         void drawPixel(Vector2 position, uint16_t color);
         void renderPanel(Panel panel);
         Adafruit_Protomatter matrix;
+
+        u_int16_t pathColor;
+        u_int16_t playerColor;
+        u_int16_t keyColor;
+        u_int16_t enemyColor;
+        u_int16_t pathSelectionColor;
+        u_int16_t tpColor;
 
 };

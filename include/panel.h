@@ -8,29 +8,25 @@ class Panel {
 public:
     Panel();
     Panel(
-        int offset_x,
-        int offset_y, 
+        Vector2 offset,
         float rotation,
         std::vector<std::string>map
     ) : 
-    offset_x(offset_x),
-    offset_y(offset_y),
+    offset(offset),
     rotation(rotation),
     map(std::move(map))
     {
     }
 
-    int offset_x = 0;
-    int offset_y = 0;
+    Vector2 offset;
     float rotation = 0;
     std::vector<std::string> map;
 
-    int width;
-    int height;
-    int physical_offset_x = 0;
-    int physical_offset_y = 0;
+    int width = 64;
+    int height = 32;
+    Vector2 physical_offset;
     int index = 0;
 
     char getCharAtPosition(Vector2 position);
-
+    void setCharAtPosition(Vector2 position, char value);
 };
