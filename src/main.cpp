@@ -3,15 +3,12 @@
 #include "game.cpp"
 
 const int MONITOR_SPEED = 115200;
+const int GAME_SPEED_CAP = 10;
 
 Game game = Game();
 
-const int hallPin1 = 3;
-const int hallPin2 = 9;
-
 void setup() {
   Serial.begin(MONITOR_SPEED);
-  
   Serial.println("Setup complete");
   game.start();
 }
@@ -19,5 +16,5 @@ void setup() {
   
 void loop(void) {
   game.update();
-  delay(100);
+  delay(GAME_SPEED_CAP);
 }

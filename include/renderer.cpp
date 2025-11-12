@@ -30,6 +30,7 @@ Renderer::Renderer() : matrix(
     enemyColor = matrix.color565(255, 0, 0);
     pathSelectionColor = matrix.color565(0, 255, 0);
     tpColor = matrix.color565(120, 0, 255);
+    white = matrix.color565(255, 255, 255);
 }
 
 void Renderer::clear(){
@@ -73,56 +74,25 @@ void Renderer::renderPanel(Panel panel){
             {
                 case '*':
                 case '=':
-                    if(panel.rotation != 0){
-                        drawPanelPixel(
-                            Vector2(0, panel.height) + Vector2(y, -x),
-                            panel,
-                            pathColor
-                        );
-                    }
-                    else {
-                        drawPanelPixel(
-                            Vector2(x, y),
-                            panel,
-                            pathColor
-                        );
-                    }
+                    drawPanelPixel(
+                        getTransformedPosition(Vector2(x, y), panel),
+                        panel,
+                        pathColor
+                    );
                 break;
                 case '+':
                 case '#':
                 case '$':
-                    if(panel.rotation != 0){
-                        drawPanelPixel(
-                            Vector2(0, panel.height) + Vector2(y, -x),
-                            panel,
-                            keyColor
-                        );
-                    }
-                    else {
-                        drawPanelPixel(
-                            Vector2(x, y),
-                            panel,
-                            keyColor
-                        );
-                    }
+                    drawPanelPixel(
+                        getTransformedPosition(Vector2(x, y), panel),
+                        panel,
+                        keyColor
+                    );
                 break;
                 case 'a':
                 case 'b':
                 case 'c':
-                    if(panel.rotation != 0){
-                        drawPanelPixel(
-                            Vector2(0, panel.height) + Vector2(y, -x),
-                            panel,
-                            tpColor
-                        );
-                    }
-                    else {
-                        drawPanelPixel(
-                            Vector2(x, y),
-                            panel,
-                            tpColor
-                        );
-                    }
+                    renderPortal(getTransformedPosition(Vector2(x, y), panel), panel);
                     break;                
                 default:
                 break;
@@ -130,6 +100,41 @@ void Renderer::renderPanel(Panel panel){
             x++;
         }
         y++;
+    }
+}
+
+Vector2 Renderer::getTransformedPosition(Vector2 position, Panel panel) {
+    if(panel.rotation != 0){
+        return Vector2(0, panel.height) + Vector2(position.y, -position.x);
+    }
+    return position;
+}
+
+void Renderer::renderPortal(Vector2 position, Panel panel) {
+    drawPanelPixel(
+        position,
+        panel,
+        tpColor
+    );
+}
+
+void Renderer::renderEnemy(Vector2 position, Panel panel){
+    drawPanelPixel(position, panel, enemyColor);
+}
+
+void Renderer::renderArray(std::list<int> chars, int width, Vector2 position, Panel panel, u_int16_t color){
+    int x = 0;
+    int y = 0;
+    int height = chars.size() / width;
+    for(int num: chars){
+        if(num){
+            drawPanelPixel(position + Vector2(x - width / 2, y - height / 2), panel, color);
+        }
+        x++;
+        if(x >= width){
+            y++;
+            x = 0;
+        }
     }
 }
 

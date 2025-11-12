@@ -42,6 +42,7 @@ private:
     void movePlayerTo(Vector2 position);
     Panel& getPanelAtPosition(Vector2 position);
     
+    Vector2 getCharacterLocalPosition();
     Vector2 getCharacterPosition(char character, const Panel &panel);
     void setCharacterAtPosition(Vector2 position, char value);
     std::list<Vector2> getCharacterPositions(char character, const Panel &panel);
@@ -56,6 +57,7 @@ private:
     float enemyMoveTime = 100;
     double pathSelectionTime = 0;
     float pathSelectionDuration = 500.0;
+    bool isDeadEndMove = false;
     void moveEnemy(Enemy &enemy);
 
     ESP32Encoder encoder;

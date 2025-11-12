@@ -12,4 +12,5 @@ public:
     Vector2 direction;
     std::list<Vector2> availableDirections;
     std::vector<Vector2> forwardDirections;
+    std::vector<Vector2> backwardDirections;
 };

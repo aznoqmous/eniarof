@@ -26,7 +26,8 @@ public:
     int height = 32;
     Vector2 physical_offset;
     int index = 0;
-
+    std::list<Vector2> paths;
+    void loadPaths();
     char getCharAtPosition(Vector2 position);
     void setCharAtPosition(Vector2 position, char value);
 };

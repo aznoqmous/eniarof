@@ -18,6 +18,7 @@ Game::Game() {
         panel.width = panel.rotation ? 32 : 64;
         panel.height = panel.rotation ? 64 : 32;
         panels.push_back(panel);
+        panel.loadPaths();
         
         std::list<Vector2> enemyPositions = getCharacterPositions('%', panel);
         for(Vector2 position : enemyPositions){
@@ -53,8 +54,6 @@ Game::Game() {
 }
 
 void Game::start() {
-
-
     pinMode(hallPin1, INPUT);  // use internal pull-up
     pinMode(hallPin2, INPUT);  // use internal pull-up
 
@@ -76,6 +75,11 @@ void Game::restartFromLastCheckpoint(){
     }
 }
 
+Vector2 Game::getCharacterLocalPosition()
+{
+    return player.position - currentPanel.offset;
+}
+
 Vector2 Game::getCharacterPosition(char character, const Panel &panel) {
     int x = 0;
     int y = 0;
@@ -89,7 +93,9 @@ Vector2 Game::getCharacterPosition(char character, const Panel &panel) {
         }
         y++;
     }
+    return Vector2::ZERO;
 }
+
 std::list<Vector2> Game::getCharacterPositions(char character, const Panel &panel) {
     int x = 0;
     int y = 0;
@@ -220,15 +226,14 @@ void Game::moveForward(){
 }
 
 void Game::moveBackward(){
-    player.forwardDirections = getBackwardDirections(player);
-    if(!player.forwardDirections.size()) {
-        // player.forwardDirections = getForwardDirections(player);
+    player.backwardDirections = getBackwardDirections(player);
+    if(!player.backwardDirections.size()) {
         moveForward();
         return;
     }
     Vector2 direction;
-    if(player.forwardDirections.size() == 1){
-        direction = player.forwardDirections.front();
+    if(player.backwardDirections.size() == 1){
+        direction = player.backwardDirections.front();
         player.direction = Vector2(-direction.x, -direction.y);
     }
     else {
@@ -238,8 +243,8 @@ void Game::moveBackward(){
     }
     movePlayer(direction);
 
-    player.forwardDirections = getBackwardDirections(player);
-    if(player.forwardDirections.size() != 1){
+    player.backwardDirections = getBackwardDirections(player);
+    if(player.backwardDirections.size() != 1){
         isPathSelection = true;
         pathSelectionTime = millis();
     }
@@ -273,6 +278,7 @@ std::list<Vector2> Game::getAvailableDirections(Vector2 position) {
     }
     return directions;
 }
+
 std::list<Vector2> Game::getAvailableEnemyDirections(Vector2 position) {
     std::list<Vector2> directions;
     std::list<Vector2> possibleDirections = {
@@ -307,7 +313,6 @@ void Game::moveEnemy(Enemy &enemy){
     }
 
     enemy.position += enemy.direction;
-
 }
 
 void Game::update() {
@@ -319,11 +324,11 @@ void Game::update() {
         }
     }
 
+    // renderer.clearPanel(currentPanel);
+    // renderer.renderPanel(currentPanel);
+
     renderer.drawPanelPixel(
-        Vector2(
-            player.position.x - currentPanel.offset.x,
-            player.position.y - currentPanel.offset.y
-        ),
+        getCharacterLocalPosition(),
         currentPanel,
         renderer.pathColor
     ); // erase player previous position
@@ -337,7 +342,7 @@ void Game::update() {
     
     // Draw player as white pixel
     renderer.drawPanelPixel(
-        player.position - currentPanel.offset,
+        getCharacterLocalPosition(),
         currentPanel,
         hasKey && int(millis() / 300.0) % 3 > 1 ? renderer.keyColor : renderer.playerColor
     );
@@ -348,14 +353,17 @@ void Game::update() {
         for(Enemy &enemy: enemies){
             Panel p = getPanelAtPosition(enemy.position);
             if(!enemy.activated && currentPanel.index != p.index) {
-                renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
+                renderer.renderEnemy(enemy.position - p.offset, p);
+                //renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
                 continue;
             }
             renderer.drawPanelPixel(enemy.position - p.offset, p,  renderer.pathColor);
             enemy.activated = true;
             moveEnemy(enemy);
             p = getPanelAtPosition(enemy.position);
-            renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
+            // renderer.drawPanelPixel(enemy.position - p.offset, p, renderer.enemyColor);
+            renderer.renderEnemy(enemy.position - p.offset, p);
+
         }
     }
 
@@ -365,12 +373,12 @@ void Game::update() {
 
 void Game::inputs(){
 
-    int count = encoder.getCount();
-    if(abs(count)){
-        if(count > 0) inputForward();
-        else inputBackward();
-        encoder.clearCount();
-    }
+    // int count = encoder.getCount();
+    // if(abs(count)){
+    //     if(count > 0) inputForward();
+    //     else inputBackward();
+    //     encoder.clearCount();
+    // }
 
     // ESP32 buttons for debug purpose
     isUpJustPressed = false;
@@ -383,6 +391,17 @@ void Game::inputs(){
     else {
         isUpPressed = false;
     }
+    
+    isDownJustPressed = false;
+    if(!digitalRead(BUTTON_DOWN_PIN)){
+        if(!isUpJustPressed && !isDownPressed){
+            isDownJustPressed = true;
+        }
+        isDownPressed = true;
+    }
+    else {
+        isDownPressed = false;
+    }
 
     if(isPathSelection){
         int pathIndex = int((millis() - pathSelectionTime) / pathSelectionDuration) % player.forwardDirections.size();
@@ -393,11 +412,18 @@ void Game::inputs(){
                 renderer.pathColor
             );
         }
+        
         if(isUpJustPressed){
             isPathSelection = false;
             player.direction = player.forwardDirections[pathIndex];
             movePlayer(player.direction);
         }
+        if(isDownJustPressed){
+            isPathSelection = false;
+            // player.direction = Vector2::ZERO - player.direction;
+            movePlayer(Vector2::ZERO - player.direction);
+        }
+
         // draw current path
         else {
             renderer.drawPanelPixel(
@@ -424,10 +450,7 @@ void Game::inputs(){
 
 void Game::inputForward(){
         renderer.drawPanelPixel(
-            Vector2(
-                player.position.x - currentPanel.offset.x,
-                player.position.y - currentPanel.offset.y
-            ),
+            getCharacterLocalPosition(),
             currentPanel,
             renderer.pathColor
         ); // erase player previous position
@@ -450,10 +473,7 @@ void Game::inputForward(){
 
 void Game::inputBackward(){
     renderer.drawPanelPixel(
-        Vector2(
-            player.position.x - currentPanel.offset.x,
-            player.position.y - currentPanel.offset.y
-        ),
+        getCharacterLocalPosition(),
         currentPanel,
         renderer.pathColor
     ); // erase player previous position
