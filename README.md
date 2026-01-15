@@ -12,3 +12,14 @@ Sibylle Loayza - **Graphisme**
 Paul Landreau - **Programmation**  
 Nils Van Eeckhout - **Son**  
 Mathis Dos - **Son**  
+
+# CONTROLLER PINOUT
+Hall captor:
+MARRON - GND
+ROUGE - 5V
+VERT - INPUT
+
+BLANC - GND
+ROUGE - 5V
+VERT INPUT
+

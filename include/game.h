@@ -41,6 +41,7 @@ private:
     void movePlayer(Vector2 direction);
     void movePlayerTo(Vector2 position);
     Panel& getPanelAtPosition(Vector2 position);
+    Panel& getPanelByIndex(int index);
     
     Vector2 getCharacterLocalPosition();
     Vector2 getCharacterPosition(char character, const Panel &panel);

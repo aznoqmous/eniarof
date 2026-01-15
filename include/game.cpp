@@ -42,6 +42,9 @@ Game::Game() {
     renderer.renderPanel(currentPanel);
 
     player = Player();
+
+    // currentPanel = getPanelByIndex(7);
+    // player.spawnPosition = getCharacterPosition('*', currentPanel);
     player.spawnPosition = getCharacterPosition('0', currentPanel);
     // player.spawnPosition = Vector2(-300, 12);
     player.position = player.spawnPosition;
@@ -250,10 +253,19 @@ void Game::moveBackward(){
     }
 }
 
-Panel &Game::getPanelAtPosition(Vector2 position){
+Panel& Game::getPanelAtPosition(Vector2 position){
     for(Panel &panel : panels) {
         if(position.x >= panel.offset.x && position.x < panel.offset.x + panel.width &&
            position.y >= panel.offset.y && position.y < panel.offset.y + panel.height) {
+            return panel;
+        }
+    }
+    return currentPanel; // Return current panel if no other found
+}
+
+Panel& Game::getPanelByIndex(int index){
+    for(Panel &panel : panels) {
+        if(panel.index == index) {
             return panel;
         }
     }
@@ -373,12 +385,12 @@ void Game::update() {
 
 void Game::inputs(){
 
-    // int count = encoder.getCount();
-    // if(abs(count)){
-    //     if(count > 0) inputForward();
-    //     else inputBackward();
-    //     encoder.clearCount();
-    // }
+    int count = encoder.getCount();
+    if(abs(count)){
+        if(count > 0) inputForward();
+        else inputBackward();
+        encoder.clearCount();
+    }
 
     // ESP32 buttons for debug purpose
     isUpJustPressed = false;
